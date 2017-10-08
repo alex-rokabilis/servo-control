@@ -1,0 +1,8 @@
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var socket = io('http://192.168.1.5:3001');
+  socket.on('servo_pulse_width::get', function (data) {
+    console.log(data);
+  });
+  socket.emit('servo_pulse_width::set', 500);
+</script>
