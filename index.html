@@ -1,8 +1,174 @@
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  var socket = io();
-  socket.on('servo_pulse_width::get', function (data) {
-    console.log(data);
-  });
-  socket.emit('servo_pulse_width::set', 500);
-</script>
+<html>
+
+<head>
+    <script src="http://192.168.1.7:3001/socket.io/socket.io.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+</head>
+
+<body>
+    <p>
+        <span>Motor's current value:</span>
+        <span id="currentMotorValue"></span>
+    </p>
+    <input id="motorValueInput" type="range" min="500" max="2500" step="100" onchange="onMotorValueChange(event)">
+    <p>
+        <span>Slider's value:</span> <span id="requestedMotorValue"></span>
+    </p>
+    <div class='debug'>0deg</div>
+    <div class='circle'>
+        <div id="line" style="
+            height: 100%;
+            width: 1.5%;
+            position: absolute;
+            background-color: white;
+            left: 49.25%;
+            box-shadow: 0 0 2px #000;
+            transform:rotate(25deg);
+        "></div>
+        <div id="dot1" style="transform:rotate(25deg)" class='dot'></div>
+        <div id="dot2" style="transform:rotate(205deg)" class='dot'></div>
+
+    </div>
+    <script>
+        var socket = io('http://192.168.1.7:3001/');
+        socket.on('servo_pulse_width::get', function (data) {
+            document.getElementById('currentMotorValue').textContent = data
+        });
+
+        function onMotorValueChange(ev) {
+            document.getElementById('requestedMotorValue').textContent = ev.target.value
+            socket.emit('servo_pulse_width::set', parseInt(ev.target.value))
+        }
+        document.getElementById('motorValueInput').value = 500;
+        document.getElementById('motorValueInput').onchange({
+            target: document.getElementById('motorValueInput')
+        });
+
+
+        $(document).ready(function () {
+            let is_dragging = false;
+
+            $(document).on("mousedown touchstart", "#dot1", e => is_dragging = true);
+
+            $(document).on("mouseup touchend", e => is_dragging = false);
+
+            return $(window).on("mousemove touchmove", function (e) {
+                if (is_dragging) {
+                    const circle = $(".circle");
+                    let touch = undefined;
+                    if (e.originalEvent.touches) {
+                        touch = e.originalEvent.touches[0];
+                    }
+                    const center_x = ($(circle).outerWidth() / 2) + $(circle).offset().left;
+                    const center_y = ($(circle).outerHeight() / 2) + $(circle).offset().top;
+                    const pos_x = e.pageX || touch.pageX;
+                    const pos_y = e.pageY || touch.pageY;
+                    const delta_y = center_y - pos_y;
+                    const delta_x = center_x - pos_x;
+                    let angle = Math.atan2(delta_y, delta_x) * (180 / Math.PI); // Calculate Angle between circle center and mouse pos
+                    angle -= 90;
+                    if (angle < 0) {
+                        angle = 360 + angle; // Always show angle positive
+                    }
+                    angle = Math.round(angle);
+                    if (angle > 25 && angle < 205) angle = Math.abs(25 - angle) < Math.abs(205 - angle) ?
+                        25 : 205;
+
+                    var dot2 = angle + 180;
+                    if(dot2>360) dot2 = dot2 - 360;
+                    var q =  parseInt(2500 - (dot2-25) * 11)
+                    
+                    socket.emit('servo_pulse_width::set', q)
+
+                    $("#dot1").css("transform", `rotate(${angle}deg)`);
+                    $("#line").css("transform", `rotate(${angle}deg)`);
+                    $("#dot2").css("transform", `rotate(${dot2}deg)`);
+                    return $(".debug").html(angle + "deg");
+
+
+                }
+            });
+        });
+    </script>
+
+    <style>
+        *,
+        *:before,
+        *:after {
+            border: 0;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: 0;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background-color: #ecf0f1;
+        }
+
+        .debug {
+            color: #9b59b6;
+            font-family: monospace;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate3d(-50%, -50%, 0);
+            z-index: 100;
+            font-size: 3vw;
+        }
+
+        .circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            background-color: #9b59b6;
+            border-radius: 50%;
+            width: 25%;
+            height: 0;
+            padding-bottom: 25%;
+            transform: translate3d(-50%, -50%, 0);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .circle:before {
+            content: "";
+            position: absolute;
+            width: 90%;
+            height: 90%;
+            background-color: #ecf0f1;
+            border-radius: 50%;
+            top: 5%;
+            left: 5%;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .circle .dot {
+            position: absolute;
+            width: 5%;
+            height: 50%;
+            left: 47.5%;
+            top: 0;
+            transform: rotate(0deg);
+            transform-origin: center bottom;
+        }
+
+        .circle .dot:before {
+            content: "";
+            position: absolute;
+            background-color: #fff;
+            box-shadow: 0 0 10px #000;
+            width: 200%;
+            transform: translate3d(-25%, -25%, 0);
+            height: 0;
+            padding-bottom: 200%;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</body>
+
+</html>
