@@ -5,7 +5,7 @@ var ip = require("ip");
 var Gpio = require('pigpio').Gpio;
 
 var motor = new Gpio(18, {mode: Gpio.OUTPUT})
-
+motor.servoWrite(500)
 
 app.listen(3001, ip.address(), () => console.log(`listening on http://${ip.address()}:3001`))
 
