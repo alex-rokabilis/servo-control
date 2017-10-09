@@ -32,16 +32,6 @@
             document.getElementById('currentMotorValue').textContent = data
         });
 
-        function onMotorValueChange(ev) {
-            document.getElementById('requestedMotorValue').textContent = ev.target.value
-            socket.emit('servo_pulse_width::set', parseInt(ev.target.value))
-        }
-        document.getElementById('motorValueInput').value = 500;
-        document.getElementById('motorValueInput').onchange({
-            target: document.getElementById('motorValueInput')
-        });
-
-
         $(document).ready(function () {
             let is_dragging = false;
 
